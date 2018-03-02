@@ -1,6 +1,5 @@
 *.pdf
 *.docx
-*.png
 *.zip
 
 __pycache__/

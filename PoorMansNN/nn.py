@@ -1,7 +1,7 @@
 from typing import List, Dict, Tuple, Callable
 from copy import deepcopy
 import numpy as np
-import opt
+from . import opt
 
 class NN:
     """

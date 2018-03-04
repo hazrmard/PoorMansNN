@@ -1,3 +1,14 @@
+"""
+Implements layers is modular units in a network. Each layer is able to:
+
+* feedforward inputs through activations and return output,
+* Return error derivatives with respect to:
+  * the argument (z) of the activation function, dE/dz
+  * the the weights (w) into the layer, dE/dw
+  * the biases (b) into the layer, dE/db
+  * the inputs (x) into the layer, dE/dx
+"""
+
 from typing import Iterable
 import numpy as np
 from .act import Activation
@@ -15,7 +26,7 @@ class Layer:
     Mathematically:
     ```
     z = w*x + b
-    A = act(z)
+    a = act(z)
     ```
 
     Args:
@@ -40,8 +51,8 @@ class Layer:
                 * 2 / np.sqrt(sum(self.prevshape)) \
                 - np.sqrt(sum(self.shape))
         self.b = np.zeros(self.shape)
-        
-    
+
+
 
 
     def feedforward(self, x: np.ndarray) -> np.ndarray:
@@ -57,7 +68,7 @@ class Layer:
         # dE/dz = dE/da * da/dz
         # N x dim(a) = N x dim(a) .* N x dim(a)
         return self.act.dadz(self.a, self.z) * dEda
-    
+
 
 
     def dEdw(self, dEdz: np.ndarray) -> np.ndarray:
@@ -65,7 +76,7 @@ class Layer:
         # dE/dw = x * dE/dz
         # dim(x) x dim(a) = N x dim(x) * N x dim(a)
         return np.tensordot(self.x, dEdz, axes=[[0], [0]]) / len(self.x)
-    
+
 
 
     def dEdb(self, dEdz: np.ndarray) -> np.ndarray:
@@ -73,7 +84,7 @@ class Layer:
         # dE/dw = dE/dz * 1
         # dim(a) = mean(N x dim(a))
         return np.mean(dEdz, 0)
-    
+
 
 
     def dEdx(self, dEdz: np.ndarray) -> np.ndarray:

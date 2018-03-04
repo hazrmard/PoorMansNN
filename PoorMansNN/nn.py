@@ -1,3 +1,7 @@
+"""
+Implements a feed forward neural network.
+"""
+
 from typing import List, Dict, Tuple, Callable
 from copy import deepcopy
 import numpy as np
@@ -10,21 +14,15 @@ class NN:
     A simple feed-forward neural network.
 
     Args:
-    * layers (List[int]): A list of units in each layer for hidden, and
-    output layers (for a total of L layers).
-    * error (Callable): The error measure function.
-    * optimizer (Callable): A function/callable that takes the array of error
-    derivatives w.r.t weights and returns a similar array containing weight
-    changes for the update.
+    * layers (List[int]): A list of Layer instances for hidden and output layers.
+    * error (loss.Loss): The error measure function and derivative.
+    * optimizer (opt.Optimizer): Changes weights in response to error derivatives.
 
     Attributes:
     * L (int): Number of layers in network (hidden, output).
     * layers (List[Layer]): A list of number of units in each layer.
-    * error (func): Returns the error measure. Takes same inputs as dEdy() and
-    returns a float.
-    * optimizer (Callable): Takes a N x D array of error derivatives w.r.t
-    weights for each N (inputs) x D (units) weights for a single layer. Returns
-    a similar array containing weight updates.
+    * error (loss.Loss): Returns the error measure.
+    * optimizer (opt.Optimizer): An instantiated Optimizer class.
     """
 
     def __init__(self, layers: List[Layer], error: loss.Loss,

@@ -7,27 +7,27 @@ class TestActivation(unittest.TestCase):
 
     def setUp(self):
         pass
-    
+
 
 
     def test_linear(self):
         pass
-    
+
 
 
     def test_sigmoid(self):
         pass
-    
+
 
 
     def test_tanh(self):
         pass
-    
+
 
 
     def test_relu(self):
         pass
-    
+
 
 
     def test_leaky_relu(self):
@@ -40,7 +40,7 @@ class TestLayer(unittest.TestCase):
     def setUp(self):
         self.batchsize = 10
         self.dim_size = 10
-    
+
 
 
     def test_feedforward(self):
@@ -52,7 +52,7 @@ class TestLayer(unittest.TestCase):
                 x = np.random.rand(self.batchsize, *indim)
                 y = l.feedforward(x)
                 self.assertTrue(y.shape==(self.batchsize, *dim))
-    
+
 
 
     def test_gradients(self):
@@ -102,7 +102,7 @@ class TestNN(unittest.TestCase):
     def test_prediction(self):
         y = self.nn.predict(self.x)
         self.assertTrue(y.shape==self.nn.layers[-1].a.shape)
-    
+
 
 
     def test_backpropagation(self):
@@ -112,7 +112,7 @@ class TestNN(unittest.TestCase):
 
 
     def test_training(self):
-        err = self.nn.train(self.x, self.y, self.batchsize // 2, 5, test=(self.y, self.x))
+        err, _ = self.nn.train(self.x, self.y, self.batchsize // 2, 5, test=(self.y, self.x))
 
 
 

@@ -2,6 +2,8 @@
 
 A simple implementation of a feed-forward neural network with minimal dependencies.
 
+![Logo](/PoorMansNN.png)
+
 The package defines a standard neural network `NN` class and several modules:
 
 * `act`: Activation functions and their derivatives. Defines the `Activation` class.

@@ -7,45 +7,77 @@ import numpy as np
 
 
 
-# Linear/no activation
-def linear(x: np.ndarray) -> np.ndarray:
-    return x
+class Activation:
+    """
+    The activation function and its derivative. An activation is defined by:
+    * **a**: The output of the activation function,
+    * **z**: The input to the activation function.
 
-def dlinear(x: np.ndarray) -> np.ndarray:
-    return np.ones_like(x)
+    Mathematically:
+    ```
+    A = act(z)
+    ```
+    """
 
-
-# Hyperbolic tangent
-def tanh(x: np.ndarray) -> np.ndarray:
-    return np.tanh(x)
-
-
-def dtanh(x: np.ndarray) -> np.ndarray:
-    return 1 - np.square(np.tanh(x))
-
-
-# REctified Linear Unit
-def relu(x: np.ndarray) -> np.ndarray:
-    return np.where(x > 0, x, 0)
+    def act(self, z: np.ndarray) -> np.ndarray:
+        pass
 
 
-def drelu(x: np.ndarray) -> np.ndarray:
-    return np.where(x > 0, 1., 0)
+    def dadz(self, a: np.ndarray, z: np.ndarray) -> np.ndarray:
+        pass
 
 
-# Leaky REctified Linear Unit
-def leaky_relu(x: np.ndarray) -> np.ndarray:
-    return np.where(x > 0, x, 1e-2*x)
+
+class Linear(Activation):
+
+    def act(self, z: np.ndarray) -> np.ndarray:
+        return z
+
+    def dadz(self, a: np.ndarray, z: np.ndarray) -> np.ndarray:
+        return np.ones_like(z)
 
 
-def dlrelu(x: np.ndarray) -> np.ndarray:
-    return np.where(x > 0, 1., 1e-2)
+
+class Tanh(Activation):
+
+    def act(self, z: np.ndarray) -> np.ndarray:
+        return np.tanh(z)
 
 
-# Sigmoid
-def sigmoid(x: np.ndarray) -> np.ndarray:
-    return 1 / (1 + np.exp(-x))
+    def dadz(self, a: np.ndarray, z: np.ndarray) -> np.ndarray:
+        return 1 - np.square(a)
 
 
-def dsigmoid(x: np.ndarray) -> np.ndarray:
-    return x * (1 - x)
+
+class Relu(Activation):
+        
+    def act(self, z: np.ndarray) -> np.ndarray:
+        return np.where(z > 0, z, 0)
+
+
+    def dadz(self, a: np.ndarray, z: np.ndarray) -> np.ndarray:
+        return np.where(z > 0, 1., 0)
+
+
+
+
+class Leaky_relu(Activation):
+        
+    def act(self, z: np.ndarray) -> np.ndarray:
+        return np.where(z > 0, z, 1e-2*z)
+
+
+    def dadz(self, a: np.ndarray, z: np.ndarray) -> np.ndarray:
+        return np.where(z > 0, 1., 1e-2)
+
+
+
+
+class Sigmoid(Activation):
+        
+    def act(self, z: np.ndarray) -> np.ndarray:
+        return 1 / (1 + np.exp(-z))
+
+
+    def dadz(self, a: np.ndarray, z: np.ndarray) -> np.ndarray:
+        return a * (1 - a)

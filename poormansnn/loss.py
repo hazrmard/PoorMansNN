@@ -12,10 +12,23 @@ for each of D output units, and for each of N instances.
 import numpy as np
 
 
-# Squared error
-def squared(y, ypred):
-    return np.sum(np.mean(0.5 * np.square(ypred - y), 0))
+
+class Loss:
+
+    def __call__(self, y: np.ndarray, ypred: np.ndarray) -> float:
+        pass
 
 
-def dsquared(y, ypred):
-    return ypred - y
+    def dEdy(self, y: np.ndarray, ypred: np.ndarray) -> np.ndarray:
+        pass
+
+
+
+class SquaredLoss(Loss):
+
+    def __call__(self, y: np.ndarray, ypred: np.ndarray) -> float:
+        return np.sum(np.mean(0.5 * np.square(ypred - y), 0))
+
+
+    def dEdy(self, y: np.ndarray, ypred: np.ndarray) -> np.ndarray:
+        return ypred - y

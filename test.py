@@ -1,4 +1,5 @@
 import unittest
+from typing import List
 import numpy as np
 from poormansnn import NN, Layer, act, loss, opt
 
@@ -6,73 +7,140 @@ from poormansnn import NN, Layer, act, loss, opt
 class TestActivation(unittest.TestCase):
 
     def setUp(self):
-        pass
+        self.Z: List[np.ndarray] = []
+        self.dim_size = 10      # max size of any dimension
+        self.max_dims = 4       # maximum dimensionality of inputs
+        self.delta = 1e-3
+        for i in range(1, self.max_dims):
+            for j in range(1, self.max_dims):
+                dim = np.random.choice(np.arange(1, self.dim_size + 1), j)
+                batchsize = np.random.randint(1, self.dim_size+1)
+                z = 1 + np.random.rand(batchsize, *dim)
+                self.Z.append(z)
+    
+
+
+    def gradient_check(self, activation: act.Activation):
+        # Comparing numerical and analytical gradients
+        for z in self.Z:
+            a = activation(z)
+            dz = np.random.rand(*z.shape) * self.delta
+            zplus = z + dz / 2
+            zminus = z - dz / 2
+            aplus = activation(zplus)
+            aminus = activation(zminus)
+            da = aplus - aminus
+            dadz_n = da / dz
+            dadz_a = activation.dadz(a, z)
+            self.assertLessEqual(np.abs(dadz_a - dadz_n).sum(), self.delta)
+
 
 
 
     def test_linear(self):
-        pass
+        self.gradient_check(act.Linear())
 
 
 
     def test_sigmoid(self):
-        pass
+        self.gradient_check(act.Sigmoid())
 
 
 
     def test_tanh(self):
-        pass
+        self.gradient_check(act.Tanh())
 
 
 
     def test_relu(self):
-        pass
+        self.gradient_check(act.Relu())
 
 
 
     def test_leaky_relu(self):
+        self.gradient_check(act.Leaky_relu())
+    
+
+
+    def test_softmax(self):
+        # TODO: complete implementation
+        # self.gradient_check(act.Softmax())
         pass
 
 
 
 class TestLayer(unittest.TestCase):
 
+
+    @staticmethod
+    def einsumProduct(x: np.ndarray, w: np.ndarray) -> np.ndarray:
+        # An alternative approach for tensor multiplication using einstein
+        # notation. Used for verifying FeedForward computations. Hardcoded for
+        # multiplying N x dim(x) input batch with dim(x) x dim(a) weight matrix.
+        return np.einsum(x, list(range(0, len(x.shape))),
+                w, list(range(1, len(w.shape)+1)),
+                [0, *list(range(len(x.shape), len(w.shape)+1))])
+
+
     def setUp(self):
-        self.batchsize = 10
-        self.dim_size = 10
+        self.dim_size = 10      # max size of any dimension
+        self.max_dims = 4       # maximum dimensionality of layers
+        self.layers = []
+        self.delta = 1e-2
+        for i in range(1, self.max_dims):
+            for j in range(1, self.max_dims):
+                batchsize = np.random.randint(1, self.dim_size+1)
+                dim = np.random.choice(np.arange(1, self.dim_size + 1), j)
+                indim = np.random.choice(np.arange(1, self.dim_size + 1), i)
+                l = Layer(dim, indim, act.Linear())
+                l.x = np.random.rand(batchsize, *indim)
+                l.w = np.random.rand(*l.w.shape)
+                self.layers.append(l)
+
 
 
 
     def test_feedforward(self):
-        for i in range(1, 4):
-            for j in range(1, 4):
-                dim = np.random.choice(np.arange(1, self.dim_size), j)
-                indim = np.random.choice(np.arange(1, self.dim_size), i)
-                l = Layer(dim, indim, act.Linear())
-                x = np.random.rand(self.batchsize, *indim)
-                y = l.feedforward(x)
-                self.assertTrue(y.shape==(self.batchsize, *dim))
+        # iterate over different combination of dimensions for layer input and
+        # outputs
+        for l in self.layers:
+            y = l.feedforward(l.x)
+            # check if output dimensions are as expected
+            self.assertTrue(y.shape==(len(l.x), *l.shape))
+            # compute output using einstein notation to verify tensordot
+            # approach
+            yein = l.act(self.einsumProduct(l.x, l.w))
+            self.assertAlmostEqual((y-yein).sum(), 0., 7)
 
 
 
-    def test_gradients(self):
-        for i in range(1, 4):
-            for j in range(1, 4):
-                dim = np.random.choice(np.arange(1, self.dim_size), j)
-                indim = np.random.choice(np.arange(1, self.dim_size), i)
-                l = Layer(dim, indim, act.Linear())
-                dEda = np.random.rand(self.batchsize, *dim)
-                l.z = np.random.rand(self.batchsize, *dim)
-                l.a = l.act.act(l.z)
-                l.x = np.random.rand(self.batchsize, *indim)
-                dEdz = l.dEdz(dEda)
-                dEdw = l.dEdw(dEdz)
-                dEdb = l.dEdb(dEdz)
-                dEdx = l.dEdx(dEdz)
-                self.assertTrue(dEdz.shape==dEda.shape)
-                self.assertTrue(dEdw.shape==l.w.shape)
-                self.assertTrue(dEdb.shape==l.b.shape)
-                self.assertTrue(dEdx.shape==(self.batchsize, *indim))
+    def test_gradient(self):
+        # iterate over different combination of dimensions for layer input and
+        # outputs
+        for l in self.layers:
+            dEda = np.array([1])
+            out = l.feedforward(l.x)
+            dEdz = l.dEdz(dEda)
+            dEdw_a = l.dEdw(dEdz)
+            dEdb = l.dEdb(dEdz)
+            dEdx = l.dEdx(dEdz)
+            self.assertTrue(dEdz.shape==l.a.shape)
+            self.assertTrue(dEdw_a.shape==l.w.shape)
+            self.assertTrue(dEdb.shape==l.b.shape)
+            self.assertTrue(dEdx.shape==(len(l.x), *l.prevshape))
+            # calculate numerical gradient for verification
+            dw = np.random.rand(*l.w.shape) * self.delta
+            w = l.w.copy()
+            l.w = w + dw / 2
+            outplus = l.feedforward(l.x)
+            zplus = l.z.copy()
+            l.w = w - dw / 2
+            outminus = l.feedforward(l.x)
+            zminus = l.z.copy()
+            da = outplus - outminus
+            dz = zplus - zminus
+            dEdw_n = np.tensordot(l.x, dEda * (da / dz), axes=[[0], [0]]) / len(l.x)
+            self.assertLessEqual(np.abs((dEdw_a - dEdw_n)).sum(), self.delta)
 
 
 
@@ -84,10 +152,10 @@ class TestNN(unittest.TestCase):
         self.dim_size = 10
         self.batchsize = 10
         layers = []
-        indim = np.random.choice(np.arange(1, self.dim_size), np.random.choice(self.dim_choices))
+        indim = np.random.choice(np.arange(1, self.dim_size + 1), np.random.choice(self.dim_choices))
         for i in range(self.num_layers):
-            dim = np.random.choice(np.arange(1, self.dim_size), np.random.choice(self.dim_choices))
-            l = Layer(dim, indim, act.Linear())
+            dim = np.random.choice(np.arange(1, self.dim_size + 1), np.random.choice(self.dim_choices))
+            l = Layer(dim, indim, act.Sigmoid())
             l.a = np.random.rand(self.batchsize, *dim)
             l.z = np.random.rand(self.batchsize, *dim)
             l.x = np.random.rand(self.batchsize, *indim)

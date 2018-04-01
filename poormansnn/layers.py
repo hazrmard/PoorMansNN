@@ -34,23 +34,23 @@ class Layer:
     * act (Activation): The activation function and derivative.
 
     Attributes:
-    * **W** (np.ndarray): A dim(x) x dim(a) array of weights connecting previous
+    * **w** (np.ndarray): A dim(x) x dim(a) array of weights connecting previous
     layer to current layer.
     * **b** (np.ndarray): A dim(a) array of bias values for each unit in layer.
     """
 
     def __init__(self, shape: Iterable[int], prevshape: Iterable[int], act: Activation):
-        self.shape = np.array(shape)
-        self.prevshape = np.array(prevshape)
+        self.shape = tuple(shape)
+        self.prevshape = tuple(prevshape)
         self.act = act
 
         self.z: np.ndarray = None
         self.a: np.ndarray = None
         self.x: np.ndarray = None
-        self.w = np.random.rand(*self.prevshape, *self.shape) \
+        self.w: np.ndarray = np.random.rand(*self.prevshape, *self.shape) \
                 * 2 / np.sqrt(sum(self.prevshape)) \
                 - np.sqrt(sum(self.shape))
-        self.b = np.zeros(self.shape)
+        self.b: np.ndarray = np.zeros(self.shape)
 
 
 
@@ -59,15 +59,20 @@ class Layer:
         self.x = x
         # N x dim(a) = N x dim(x) * dim(x) x dim(a)
         self.z = np.tensordot(x, self.w, axes=len(x.shape)-1)
-        self.a = self.act.act(self.z)
+        self.a = self.act(self.z)
         return self.a
 
 
 
     def dEdz(self, dEda: np.ndarray) -> np.ndarray:
         # dE/dz = dE/da * da/dz
-        # N x dim(a) = N x dim(a) .* N x dim(a)
+        # TODO: Handle multidimensional gradients (and not aggregates)
+        # TODO: N x dim(a) = N x dim(a) * N x dim(a) x dim(a)
+        # Currently: N x dim(a) = N x dim(a) * N x dim(a)
         return self.act.dadz(self.a, self.z) * dEda
+        # dadz = self.act.dadz(self.a, self.z)
+        # return np.tensordot(dadz, dEda,
+        #                     [np.arange(self.a.ndim, dadz.ndim), np.arange(1, dEda.ndim)])
 
 
 

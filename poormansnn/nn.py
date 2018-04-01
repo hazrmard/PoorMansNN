@@ -104,8 +104,6 @@ class NN:
             # Shape: dim(layer)
             dEdb = self.layers[i].dEdb(dEdz)
             # Gradient descent on weights and biases
-            # self.weights[i] += self.weight_optimizers[i](dEdw)
-            # self.biases[i] += self.bias_optimizers[i](dEdb)
             self.layers[i].w += self.weight_optimizers[i](dEdw)
             self.layers[i].b += self.bias_optimizers[i](dEdb)
 

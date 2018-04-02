@@ -26,33 +26,11 @@ class Activation:
     ```
     """
 
-    @staticmethod
-    def diag_idx(arr: np.ndarray):
-        # TODO: correct implementation
-        """
-        Calculates indices of diagonal elements in each batch in array where the
-        first dimension is along batches and the rest are square.
-        For e.g N x d x d x d x ...
-        """
-        ndim = arr.ndim - 1
-        batchsize = arr.shape[0]
-        dim = arr.shape[1]  # assuming all except first dimensions are same
-        idx = np.diag_indices(dim, ndim)
-        idx = np.tile(idx, batchsize) # ndim x dim*batchsize
-        batchidx = np.repeat(np.arange(batchsize), dim).reshape((1, dim*batchsize))
-        indices = np.concatenate((batchidx, idx), axis=0)
-        return [x for x in indices]
-        
-
-
     def __call__(self, z: np.ndarray) -> np.ndarray:
         return z
 
     def dadz(self, a: np.ndarray, z: np.ndarray) -> np.ndarray:
         return np.ones_like(z)
-        # dadz = np.zeros((*z.shape, *a.shape[1:]))
-        # dadz[self.diag_idx(dadz)] = 1
-        # return dadz
 
 
 
@@ -69,9 +47,6 @@ class Tanh(Activation):
 
     def dadz(self, a: np.ndarray, z: np.ndarray) -> np.ndarray:
         return 1 - np.square(a)
-        # dadz = super().dadz(a, z)
-        # dadz[self.diag_idx(dadz)] = (1 - np.square(a)).reshape(-1)
-        # return dadz
 
 
 
@@ -83,9 +58,6 @@ class Relu(Activation):
 
     def dadz(self, a: np.ndarray, z: np.ndarray) -> np.ndarray:
         return np.where(z > 0, 1., 0)
-        # dadz = super().dadz(a, z)
-        # dadz[self.diag_idx(dadz)] = np.where(z > 0, 1., 0).reshape(-1)
-        # return dadz
 
 
 
@@ -101,9 +73,6 @@ class Leaky_relu(Activation):
 
     def dadz(self, a: np.ndarray, z: np.ndarray) -> np.ndarray:
         return np.where(z > 0, 1., self.alpha)
-        # dadz = super().dadz(a, z)
-        # dadz[self.diag_idx(dadz)] = np.where(z > 0, 1., self.alpha).reshape(-1)
-        # return dadz
 
 
 
@@ -116,13 +85,14 @@ class Sigmoid(Activation):
 
     def dadz(self, a: np.ndarray, z: np.ndarray) -> np.ndarray:
         return a * (1 - a)
-        # dadz = super().dadz(a, z)
-        # dadz[self.diag_idx(dadz)] = (a * (1 - a)).reshape(-1)
-        # return dadz
 
 
 
 class Softmax(Activation):
+    """
+    Only works with cross-entropy loss for single-label multi-class problems.
+    i.e. only one output unit can have label=1 at a time.
+    """
 
     def __call__(self, z: np.ndarray) -> np.ndarray:
         zexp = np.exp(z - z.min())
@@ -131,6 +101,10 @@ class Softmax(Activation):
     
 
     def dadz(self, a: np.ndarray, z: np.ndarray) -> np.ndarray:
-        #TODO: Computer multivariable gradient, diagonals: a_i (1 - a_i), off:
-        # a_i (- a_k). Each element is d(a_i)/d(z_k) for i,k in activation units.
+        # TODO: finish
         return a * (1 - a)
+    
+
+    def dadz_softmax(self, a: np.ndarray, z: np.ndarray) -> np.ndarray:
+        # the whole calculation for dE/dz is done by loss.CrossEntropyLoss.dEdz_softmax
+        return np.ndarray([1])

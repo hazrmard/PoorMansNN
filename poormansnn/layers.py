@@ -11,7 +11,7 @@ Implements layers is modular units in a network. Each layer is able to:
 
 from typing import Iterable
 import numpy as np
-from .act import Activation
+from .act import Activation, Softmax
 
 
 class Layer:
@@ -66,13 +66,7 @@ class Layer:
 
     def dEdz(self, dEda: np.ndarray) -> np.ndarray:
         # dE/dz = dE/da * da/dz
-        # TODO: Handle multidimensional gradients (and not aggregates)
-        # TODO: N x dim(a) = N x dim(a) * N x dim(a) x dim(a)
-        # Currently: N x dim(a) = N x dim(a) * N x dim(a)
         return self.act.dadz(self.a, self.z) * dEda
-        # dadz = self.act.dadz(self.a, self.z)
-        # return np.tensordot(dadz, dEda,
-        #                     [np.arange(self.a.ndim, dadz.ndim), np.arange(1, dEda.ndim)])
 
 
 
@@ -99,3 +93,15 @@ class Layer:
         return np.tensordot(dEdz, self.w,
                 axes=[np.arange(1, len(dEdz.shape)),
                       np.arange(len(self.prevshape), len(self.w.shape))])
+
+
+
+
+
+class SoftmaxLayer(Layer):
+    """
+    A softmax layer *with* cross-entropy loss. To be used as *output*.
+    """
+
+    def __init__(self, shape: Iterable[int], prevshape: Iterable[int]):
+        super().__init__(shape=shape, prevshape=prevshape, act=Softmax())

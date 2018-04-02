@@ -3,11 +3,12 @@ Implements a feed forward neural network.
 """
 
 from typing import List, Dict, Tuple, Callable
+from types import MethodType
 from copy import deepcopy
 import numpy as np
 from . import opt
 from . import loss
-from . import Layer
+from . import Layer, SoftmaxLayer
 
 class NN:
     """
@@ -31,6 +32,11 @@ class NN:
         self.L = len(layers)
         self.layers = layers
         self.error = error
+
+        if isinstance(layers[-1], SoftmaxLayer) and isinstance(error, loss.CrossEntropyLoss):
+            self.error.dEdy = self.error.dEda_softmax
+            self.layers[-1].act.dadz = self.layers[-1].act.dadz_softmax
+        
         # Since optimizers may have 'memory' (e.g momentum which remembers the
         # last update value), each layer's weight and bias arrays are assigned
         # their copy of optimizer.

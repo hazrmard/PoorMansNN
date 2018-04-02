@@ -1,7 +1,7 @@
 import unittest
 from typing import List
 import numpy as np
-from poormansnn import NN, Layer, act, loss, opt
+from poormansnn import NN, Layer, SoftmaxLayer, act, loss, opt
 
 
 class TestActivation(unittest.TestCase):
@@ -23,12 +23,14 @@ class TestActivation(unittest.TestCase):
     def gradient_check(self, activation: act.Activation):
         # Comparing numerical and analytical gradients
         for z in self.Z:
-            a = activation(z)
             dz = np.random.rand(*z.shape) * self.delta
             zplus = z + dz / 2
             zminus = z - dz / 2
+
             aplus = activation(zplus)
             aminus = activation(zminus)
+            a = activation(z)
+
             da = aplus - aminus
             dadz_n = da / dz
             dadz_a = activation.dadz(a, z)
@@ -63,9 +65,34 @@ class TestActivation(unittest.TestCase):
 
 
     def test_softmax(self):
-        # TODO: complete implementation
-        # self.gradient_check(act.Softmax())
-        pass
+        # TODO: finish
+        activation = act.Softmax()
+        for z in self.Z:
+            idx = []
+            for i in range(1, z.ndim):
+                index = np.random.randint(z.shape[i], size=z.shape[0])
+                idx.append(index)
+            idx = [np.arange(z.shape[0], dtype=int)] + idx
+            mask = np.ones(z.shape, dtype=bool)
+            mask[idx] = 0
+
+            dz = np.random.rand(*z.shape) * self.delta
+            zplus = z + dz / 2
+            zminus = z - dz / 2
+
+            aplus = activation(zplus)
+            aplus[mask] = 0
+            aminus = activation(zminus)
+            aminus[mask] = 0
+            a = activation(z)
+            a[mask] = 0
+
+            da = aplus - aminus
+            dadz_n = da / dz
+            # print(dadz_n)
+            dadz_a = activation.dadz(a, z)
+            # print(dadz_a)
+            # self.assertLessEqual(np.abs(dadz_a - dadz_n).sum(), self.delta)
 
 
 
@@ -153,7 +180,7 @@ class TestNN(unittest.TestCase):
         self.batchsize = 10
         layers = []
         indim = np.random.choice(np.arange(1, self.dim_size + 1), np.random.choice(self.dim_choices))
-        for i in range(self.num_layers):
+        for i in range(self.num_layers - 1):
             dim = np.random.choice(np.arange(1, self.dim_size + 1), np.random.choice(self.dim_choices))
             l = Layer(dim, indim, act.Sigmoid())
             l.a = np.random.rand(self.batchsize, *dim)
@@ -161,9 +188,21 @@ class TestNN(unittest.TestCase):
             l.x = np.random.rand(self.batchsize, *indim)
             layers.append(l)
             indim = dim
-        self.nn = NN(layers, loss.SquaredLoss(), opt.Optimizer(0.1))
+        dim = np.random.choice(np.arange(1, self.dim_size + 1), np.random.choice(self.dim_choices))
+        l = SoftmaxLayer(dim, indim)
+        l.a = np.random.rand(self.batchsize, *dim)
+        l.z = np.random.rand(self.batchsize, *dim)
+        l.x = np.random.rand(self.batchsize, *indim)
+        layers.append(l)
         self.x = np.random.rand(self.batchsize, *layers[0].prevshape)
-        self.y = np.random.rand(self.batchsize, *layers[-1].shape)
+        self.y = np.zeros((self.batchsize, *layers[-1].shape))
+        idx = []
+        for i in range(0, len(l.shape)):
+            index = np.random.randint(l.shape[i], size=self.batchsize)
+            idx.append(index)
+        idx = [np.arange(self.batchsize, dtype=int)] + idx
+        self.y[idx] = 1
+        self.nn = NN(layers, loss.CrossEntropyLoss(), opt.Optimizer(0.1))
 
 
 

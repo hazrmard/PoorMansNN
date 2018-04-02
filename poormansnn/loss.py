@@ -23,11 +23,11 @@ class Loss:
     """
 
     def __call__(self, t: np.ndarray, y: np.ndarray) -> float:
-        pass
+        return np.sum(np.abs(t - y))
 
 
     def dEdy(self, t: np.ndarray, y: np.ndarray) -> np.ndarray:
-        pass
+        np.where(y > t, 1, -1)
 
 
 
@@ -51,7 +51,6 @@ class SquaredLoss(Loss):
 
 class CrossEntropyLoss(Loss):
     """
-    TODO: Complete cross entropy loss
     The squared error loss. Mathematically:
     ```
     Error = sum (t * log(y))
@@ -59,9 +58,24 @@ class CrossEntropyLoss(Loss):
     ```
     """
 
+    def __init__(self, softmax: bool=True):
+        self.is_softmax = True
+
+
     def __call__(self, t: np.ndarray, y: np.ndarray) -> float:
-        return np.sum(-y * np.log(y))
+        mask = t > 0
+        return np.sum(-t[mask] * np.log(y[mask]))
 
 
     def dEdy(self, t: np.ndarray, y: np.ndarray) -> np.ndarray:
         return t / y
+    
+
+    def dEda_softmax(self, t: np.ndarray, y: np.ndarray) -> np.ndarray:
+        # since dE/dz = dE/dy * dy/dz = (t / y) * y * (1 - y) = t * (1 - y)
+        # foregoes division by 'y' in case of divide-by-zero
+        # instead returns one half of the expression, the other half is returned
+        # by act.Softmax.dadz_softmax
+        print(t)
+        label = t[t!=0][0]
+        return np.where(t==0, -label * y, label * (1 - y))
